@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "dolpa"
+version = "0.1.0"
+description = "Simple and elegant framework for automating your integration tests"
+authors = ["ggautam <gpal.gtm@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+requests = "^2.31.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

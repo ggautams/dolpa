@@ -1,0 +1,71 @@
+{
+  "config": {
+    "username": "xxx",
+    "password": "yyy",
+    "base_url": "http://localhost:8000",
+    "headers": {
+      "client-app": "SHM"
+    }
+  },
+  "calls": [
+    {
+      "identifier": 1,
+      "description": "login_endpoint",
+      "resource": "/login",
+      "method": "POST",
+      "body": {
+        "currentUser": "alex.martin",
+        "currentState": "healthy"
+      },
+      "headers": {
+        "app-status": "current"
+      },
+      "saves": {
+        "authToken": "$.auth_token"
+      },
+      "assertions": {
+        "responseCheckAssertion": "responseSent==yes"
+      }
+    },
+    {
+      "identifier": 2,
+      "description": "getting users",
+      "resource": "/users",
+      "method": "POST",
+      "body": {
+        "currentUser": "alex.martin",
+        "currentState": "healthy"
+      },
+      "headers": {
+        "app-status": "current"
+      },
+      "saves": {
+        "current_block": "$.currentDepartment.currentBlock",
+        "currentFriend": "$.currentDepartment.departmentInfo.employees[2]"
+      },
+      "assertions": {
+        "nameCheck": "$.currentDepartment.departmentInfo.employees[2]==Tammy"
+      }
+    },
+    {
+      "identifier": 3,
+      "description": "fetch_preferences",
+      "resource": "/preference",
+      "method": "POST",
+      "body": {
+        "currentUser": "alex.martin",
+        "currentState": "healthy"
+      },
+      "headers": {
+        "app-status": "current"
+      },
+      "saves": {
+        "$.currentDepartment.currentBlock": "current_block"
+      },
+      "assertions": {
+        "nameCheck": "$.workingBlock=={{current_block}}",
+        "friendCheck": "$.friend=={{currentFriend}}"
+      }
+    }
+  ]
+}
