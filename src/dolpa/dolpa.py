@@ -68,7 +68,7 @@ class IntegrationTests:
     def _combine_global_with_local(self, key, local_map):
         if self.run_config.get(key):
             if local_map and isinstance(local_map, dict):
-                return {**self.run_config[key]}.update(local_map)
+                return {**self.run_config[key], **local_map}
             else:
                 return {**self.run_config[key]}
 
@@ -136,3 +136,6 @@ def get_integration_test_handler(file_path):
     with open(file_path, 'r') as read_file:
         int_test = IntegrationTests(json.load(read_file))
         return int_test
+
+if __name__ == "__main__":
+    run_bulk_integration_tests(r'/Users/ggautam/PycharmProjects/dolpa/tests')
