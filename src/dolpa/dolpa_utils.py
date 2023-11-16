@@ -1,6 +1,6 @@
 import re
 from itertools import product
-from dolpa_logger import get_logger
+from .dolpa_logger import get_logger
 
 
 LOGGER = get_logger()

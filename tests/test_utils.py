@@ -1,6 +1,5 @@
 import unittest
 
-import src.dolpa
 from src.dolpa.dolpa_utils import interpolate
 
 
@@ -36,3 +35,4 @@ class TestUtils(unittest.TestCase):
     def test_interpolate(self):
         interpolated = interpolate(self.test_call, self.test_config)
         self.assertEqual(interpolated['body']['value-1'], 'test-value-1')
+

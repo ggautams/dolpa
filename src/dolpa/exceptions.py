@@ -9,3 +9,6 @@ class NotAllowedComparison(Exception):
 class InValidCallAttributeError(Exception):
     pass
 
+
+class InValidCallAttributeModifierError(Exception):
+    pass

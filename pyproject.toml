@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dolpa"
-version = "0.1.0"
+version = "0.1.2"
 description = "Simple and elegant framework for automating your integration tests"
 authors = ["ggautam <gpal.gtm@gmail.com>"]
 readme = "README.md"

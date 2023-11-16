@@ -1,6 +1,6 @@
-from dolpa_utils import interpolate, get_dict_value_from_json_path
-from exceptions import FailedAssertion, NotAllowedComparison
-from dolpa_logger import get_logger
+from .dolpa_utils import interpolate, get_dict_value_from_json_path
+from .exceptions import FailedAssertion, NotAllowedComparison
+from .dolpa_logger import get_logger
 
 LOGGER = get_logger()
 

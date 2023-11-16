@@ -3,10 +3,10 @@ import json
 
 import requests
 from requests.auth import HTTPDigestAuth
-from dolpa_utils import interpolate, get_dict_value_from_json_path
-from dolpa_logger import get_logger
-from comparator import Comparator
-from exceptions import InValidCallAttributeError
+from .dolpa_utils import interpolate, get_dict_value_from_json_path
+from .dolpa_logger import get_logger
+from .comparator import Comparator
+from .exceptions import InValidCallAttributeError, InValidCallAttributeModifierError
 
 
 LOGGER = get_logger()
@@ -14,6 +14,7 @@ LOGGER = get_logger()
 
 class EndpointCall:
     allowed_keys = {'identifier', 'description', 'resource', 'method', 'body', 'headers', 'saves', 'assertions'}
+    allowed_modifiers = {'replace', 'merge'}
 
     def __init__(self, call):
         self._validate(call)
@@ -26,10 +27,17 @@ class EndpointCall:
         self.saves = call.get('saves')
         self.assertions = call.get('assertions')
         self._response = None
+        self._header_strategy = None
+        self._auth_strategy = None
 
     def _validate(self, call):
-        if not set(call.keys()).issubset(self.allowed_keys):
-            invalid_attrs = set(call.keys()) - (set(call.keys()).intersection(self.allowed_keys))
+        keys_set = {key if ':' not in key else key.split(':')[0] for key in call.keys()}
+        modifier_set = {key.split(':')[1] for key in call.keys() if ':' in key}
+        if not set(modifier_set).issubset(self.allowed_modifiers):
+            invalid_modifiers = set(modifier_set) - (modifier_set.intersection(self.allowed_modifiers))
+            raise InValidCallAttributeModifierError(f'{invalid_modifiers} not allowed. Fix your JSON file')
+        if not set(keys_set).issubset(self.allowed_keys):
+            invalid_attrs = set(keys_set) - (set(keys_set).intersection(self.allowed_keys))
             raise InValidCallAttributeError(f'{invalid_attrs} not allowed. Fix your JSON file.')
 
     @property
@@ -136,6 +144,3 @@ def get_integration_test_handler(file_path):
     with open(file_path, 'r') as read_file:
         int_test = IntegrationTests(json.load(read_file))
         return int_test
-
-if __name__ == "__main__":
-    run_bulk_integration_tests(r'/Users/ggautam/PycharmProjects/dolpa/tests')
