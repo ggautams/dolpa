@@ -12,3 +12,8 @@ class InValidCallAttributeError(Exception):
 
 class InValidCallAttributeModifierError(Exception):
     pass
+
+
+class AuthTypeNotSupportedError(Exception):
+    pass
+

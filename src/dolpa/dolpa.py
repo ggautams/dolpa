@@ -6,14 +6,14 @@ from requests.auth import HTTPDigestAuth
 from .dolpa_utils import interpolate, get_dict_value_from_json_path
 from .dolpa_logger import get_logger
 from .comparator import Comparator
-from .exceptions import InValidCallAttributeError, InValidCallAttributeModifierError
+from .exceptions import InValidCallAttributeError, InValidCallAttributeModifierError, AuthTypeNotSupportedError
 
 
 LOGGER = get_logger()
 
 
 class EndpointCall:
-    allowed_keys = {'identifier', 'description', 'resource', 'method', 'body', 'headers', 'saves', 'assertions'}
+    allowed_keys = {'identifier', 'description', 'resource', 'method', 'body', 'headers', 'saves', 'assertions', 'auth'}
     allowed_modifiers = {'replace', 'merge'}
 
     def __init__(self, call):
@@ -26,6 +26,7 @@ class EndpointCall:
         self.headers = call.get('headers')
         self.saves = call.get('saves')
         self.assertions = call.get('assertions')
+        self.auth = call.get('auth')
         self._response = None
         self._header_strategy = None
         self._auth_strategy = None
@@ -80,14 +81,23 @@ class IntegrationTests:
             else:
                 return {**self.run_config[key]}
 
-    def _get_auth(self):
-        auth_type = self.run_config.get('auth')
+    def _get_auth(self, call_auth_settings_dict=None):
+        if call_auth_settings_dict:
+            local_auth = interpolate(call_auth_settings_dict, self.run_config)
+            auth_type = local_auth['auth']
+        else:
+            local_auth = {}
+            auth_type = self.run_config.get('auth')
         if not auth_type:
             return None
-        if self.run_config['auth'].lower() == 'basic':
-            return self.run_config['dolpa_username'], self.run_config['dolpa_password']
+        if auth_type.lower() not in ['basic', 'digest']:
+            AuthTypeNotSupportedError(f'{auth_type} - auth mechanism is not supported.')
+        username = local_auth.get('username') or self.run_config['dolpa_username']
+        password = local_auth.get('password') or self.run_config['dolpa_password']
+        if auth_type.lower() == 'basic':
+            return username, password
         if self.run_config['auth'].lower() == 'digest':
-            return HTTPDigestAuth(self.run_config['dolpa_username'], self.run_config['dolpa_password'])
+            return HTTPDigestAuth(username, password)
         return None
 
     def _call_execute(self, call):
@@ -98,7 +108,7 @@ class IntegrationTests:
             endpoint,
             json=interpolate(call.body, self.run_config),
             headers=headers,
-            auth=self._get_auth(),
+            auth=self._get_auth(call.auth),
         )
         json_res = response.json()
         for key, val in call.saves.items():
