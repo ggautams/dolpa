@@ -1,6 +1,7 @@
 {
   "config": {
     "base_url": "http://localhost:8000",
+    "auth": "basic",
     "headers": {
       "main-agent": "Bond"
     }
@@ -16,13 +17,18 @@
         "currentState": "healthy"
       },
       "headers": {
-        "app-status": "current"
+        "app-status": "first"
       },
       "saves": {
         "authToken": "$.auth_token"
       },
       "assertions": {
         "responseCheckAssertion": "responseSent==yes"
+      },
+      "auth": {
+        "auth": "basic",
+        "username": "{{dolpa_extra_username}}",
+        "password": "{{dolpa_extra_password}}"
       }
     },
     {
@@ -34,8 +40,8 @@
         "currentUser": "alex.martin",
         "currentState": "healthy"
       },
-      "headers": {
-        "app-status": "current"
+      "headers:replace": {
+        "app-status": "second"
       },
       "saves": {
         "current_block": "$.currentDepartment.currentBlock",

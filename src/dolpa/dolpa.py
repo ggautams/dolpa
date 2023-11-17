@@ -8,7 +8,6 @@ from .dolpa_logger import get_logger
 from .comparator import Comparator
 from .exceptions import InValidCallAttributeError, InValidCallAttributeModifierError, AuthTypeNotSupportedError
 
-
 LOGGER = get_logger()
 
 
@@ -23,13 +22,13 @@ class EndpointCall:
         self.resource = call['resource']
         self.method = call['method']
         self.body = call.get('body')
-        self.headers = call.get('headers')
+        self.headers = None
+        self.header_strategy = None
         self.saves = call.get('saves')
         self.assertions = call.get('assertions')
         self.auth = call.get('auth')
         self._response = None
-        self._header_strategy = None
-        self._auth_strategy = None
+        self._populate_headers_and_headers_strategy(call)
 
     def _validate(self, call):
         keys_set = {key if ':' not in key else key.split(':')[0] for key in call.keys()}
@@ -41,6 +40,14 @@ class EndpointCall:
             invalid_attrs = set(keys_set) - (set(keys_set).intersection(self.allowed_keys))
             raise InValidCallAttributeError(f'{invalid_attrs} not allowed. Fix your JSON file.')
 
+    def _populate_headers_and_headers_strategy(self, call):
+        possible_headers_key = ['headers'] + ['headers' + ':' + mod for mod in self.allowed_modifiers]
+        header_with_strategy = list(filter(lambda key: key in possible_headers_key, call.keys()))[0]
+        if ':' in header_with_strategy:
+            self.headers, self.header_strategy = call[header_with_strategy], header_with_strategy.split(':')[-1]
+        else:
+            self.headers, self.header_strategy = call[header_with_strategy], None
+
     @property
     def response(self):
         return self._response
@@ -51,7 +58,6 @@ class EndpointCall:
 
 
 class IntegrationTests:
-
     call_method_to_req_method_mapping = {
         'GET': requests.get,
         'POST': requests.post,
@@ -66,20 +72,25 @@ class IntegrationTests:
         self.response_store = []
         self.run_config = runner_dict['config']
         self.calls = runner_dict['calls']
-        self._env_var_names = ['dolpa_username', 'dolpa_password', 'dolpa_auth_token', 'dolpa_environment']
+        self._app_env_indicator = 'dolpa_'
 
     def _load_into_config_from_env(self):
-        for var_name in self._env_var_names:
-            env_value = os.getenv(var_name)
-            if env_value:
-                self.run_config[var_name] = env_value
+        env_variables = os.environ
+        for var_name, var_value in env_variables.items():
+            if var_name.startswith(self._app_env_indicator):
+                self.run_config[var_name] = var_value
 
-    def _combine_global_with_local(self, key, local_map):
+    def _combine_global_with_local(self, key, local_map, strategy=None):
+        strategy = strategy or 'merge'
         if self.run_config.get(key):
             if local_map and isinstance(local_map, dict):
-                return {**self.run_config[key], **local_map}
+                if strategy == 'merge':
+                    return {**self.run_config[key], **local_map}
+                if strategy == 'replace':
+                    return local_map
             else:
                 return {**self.run_config[key]}
+        return local_map
 
     def _get_auth(self, call_auth_settings_dict=None):
         if call_auth_settings_dict:
@@ -102,7 +113,7 @@ class IntegrationTests:
 
     def _call_execute(self, call):
         endpoint = self.run_config['base_url'] + call.resource if call.resource.startswith('/') else call.resource
-        headers = self._combine_global_with_local('headers', call.headers)
+        headers = self._combine_global_with_local('headers', call.headers, call.header_strategy)
         requests_func = self.call_method_to_req_method_mapping[call.method.upper()]
         response = requests_func(
             endpoint,
@@ -110,6 +121,7 @@ class IntegrationTests:
             headers=headers,
             auth=self._get_auth(call.auth),
         )
+        LOGGER.info(f'Making {call.method.upper()} request to the endpoint: {endpoint}')
         json_res = response.json()
         for key, val in call.saves.items():
             self.run_config[key] = get_dict_value_from_json_path(json_res, val[2:]) if val.startswith("$.") else val
