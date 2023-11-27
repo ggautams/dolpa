@@ -1,6 +1,6 @@
 # dolpa
 
-dolpa is simple, easy to use library made for integration-testing.
+dolpa is simple, easy to use library made for API-testing.
 
 ## Installation
 
@@ -10,7 +10,7 @@ dolpa is available in PyPI.
 
 ## How to use
 In a nutshell, dolpa parses your json file which contains
-information about your integration tests. Your JSON file should
+information about your API tests. Your JSON file should
 have the following schema:
 
 ```
@@ -83,18 +83,18 @@ have the following schema:
 global variable that can be accessed using `{{<key>}}` anywhere
 in the call definition.
 
-### So how to run integration tests then?
+### So how to run API tests then?
 
-You should start by making folder for your integration tests where JSON files
+You should start by making folder for your API tests where JSON files
 containing tests like above are stored. You can have multiple test folders inside
-the root test folder. When you run your integrations tests, it only picks JSON files
+the root test folder. When you run your API tests, it only picks JSON files
 for testing inside the root and subsequently, sub-folders.
 
 Here is how you start your tests:
 ```
-from dolpa import run_bulk_integration_tests
+from dolpa import run_bulk_api_tests
 
-run_bulk_integration_tests('/User/home/test-user/test-folder-path')
+run_bulk_api_tests('/User/home/test-user/test-folder-path')
 ```
 That's all the code you need to run your tests. 
 
@@ -102,11 +102,11 @@ That's all the code you need to run your tests.
 
 Yeah, it's seldom that simple! 
 
-However, dolpa makes it super easy to handle those kind of situations. Just write your integration-tests
+However, dolpa makes it super easy to handle those kind of situations. Just write your API-tests
 JSON files and treat them like each of them are unrelated when you reference them their identifier. You
-can build complex integration-tests relationship as follows:
+can build complex API-tests relationship as follows:
 ```
-    test_handler = get_integration_test_handler('/Users/home/poweruser/test.json')
+    test_handler = get_api_test_handler('/Users/home/poweruser/test.json')
     first_call = test_handler.run(1)
     if first_call.response.status_code == 200:
         second_call = test_handler.run(2)

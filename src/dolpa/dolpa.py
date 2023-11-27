@@ -6,7 +6,8 @@ from requests.auth import HTTPDigestAuth
 from .dolpa_utils import interpolate, get_dict_value_from_json_path
 from .dolpa_logger import get_logger
 from .comparator import Comparator
-from .exceptions import InValidCallAttributeError, InValidCallAttributeModifierError, AuthTypeNotSupportedError
+from .exceptions import (InValidCallAttributeError, InValidCallAttributeModifierError,
+                         AuthTypeNotSupportedError, NoResponseDataError)
 
 LOGGER = get_logger()
 
@@ -57,7 +58,7 @@ class EndpointCall:
         self._response = http_response
 
 
-class IntegrationTests:
+class APITests:
     call_method_to_req_method_mapping = {
         'GET': requests.get,
         'POST': requests.post,
@@ -111,58 +112,70 @@ class IntegrationTests:
             return HTTPDigestAuth(username, password)
         return None
 
-    def _call_execute(self, call):
+    def _call_execute(self, call: EndpointCall):
         endpoint = self.run_config['base_url'] + call.resource if call.resource.startswith('/') else call.resource
+        endpoint = interpolate(endpoint, self.run_config)
         headers = self._combine_global_with_local('headers', call.headers, call.header_strategy)
         requests_func = self.call_method_to_req_method_mapping[call.method.upper()]
+        LOGGER.info(f'Making {call.method.upper()} request to the endpoint: {endpoint}')
         response = requests_func(
             endpoint,
             json=interpolate(call.body, self.run_config),
             headers=headers,
             auth=self._get_auth(call.auth),
         )
-        LOGGER.info(f'Making {call.method.upper()} request to the endpoint: {endpoint}')
+        LOGGER.info(f'{endpoint} responded with status code: {response.status_code}')
         json_res = response.json()
         for key, val in call.saves.items():
             self.run_config[key] = get_dict_value_from_json_path(json_res, val[2:]) if val.startswith("$.") else val
-        for assertion_name, assertion in call.assertions.items():
-            Comparator(assertion_name, assertion, self.run_config, json_res).execute()
-        return response
+        call.response = response
+        return call
 
-    def run_all(self):
+    def do_call_assertions(self, call: EndpointCall):
+        if not call.response:
+            raise NoResponseDataError(f'The call do not have response set. Probably it\'s not yet called.')
+        response_json = call.response.json()
+        for assertion_name, assertion in call.assertions.items():
+            Comparator(assertion_name, assertion, self.run_config, response_json).execute()
+
+    def run_all(self, run_with_assertions=True):
         self._load_into_config_from_env()
         for call_dict in self.calls:
             endpoint_call = EndpointCall(call_dict)
-            endpoint_call.response = self._call_execute(endpoint_call)
+            self._call_execute(endpoint_call)
+            if run_with_assertions:
+                self.do_call_assertions(endpoint_call)
 
-    def run(self, call_identifier):
+    def run(self, call_identifier: int, run_with_assertions=False):
         self._load_into_config_from_env()
         call = [item for item in self.calls if item["identifier"] == call_identifier][0]
         endpoint_call = EndpointCall(call)
-        endpoint_call.response = self._call_execute(endpoint_call)
+        self._call_execute(endpoint_call)
+        if run_with_assertions:
+            self.do_call_assertions(endpoint_call)
         return endpoint_call
 
 
-def run_integration_tests(folder_path):
+def run_api_tests(folder_path):
     with open(folder_path, 'r') as read_file:
-        int_test = IntegrationTests(json.load(read_file))
+        int_test = APITests(json.load(read_file))
         int_test.run_all()
 
 
-def run_bulk_integration_tests(root_path):
+def run_bulk_api_tests(root_path):
     contents = sorted(os.listdir(root_path))
     for curr_path in contents:
         inner_path = (root_path + curr_path) if root_path.endswith('/') else (root_path + '/' + curr_path)
         if os.path.isdir(inner_path):
-            run_bulk_integration_tests(inner_path)
+            run_bulk_api_tests(inner_path)
         else:
             if inner_path.endswith('.json'):
                 with open(inner_path, 'r') as read_file:
-                    int_test = IntegrationTests(json.load(read_file))
+                    int_test = APITests(json.load(read_file))
                     int_test.run_all()
 
 
-def get_integration_test_handler(file_path):
+def get_api_test_handler(file_path):
     with open(file_path, 'r') as read_file:
-        int_test = IntegrationTests(json.load(read_file))
+        int_test = APITests(json.load(read_file))
         return int_test

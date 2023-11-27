@@ -25,7 +25,7 @@ def get_dict_value_from_json_path(search_dict, json_path):
     return current_value
 
 
-def get_all_possible_lookouts_from_json_path_with_wild_cards(json_path, lower_limit=0, upper_limit=100):
+def get_all_lookouts(json_path, lower_limit=0, upper_limit=100):
     expansion_stack = []
     for index, char in enumerate(json_path):
         if char == '[':
@@ -39,8 +39,14 @@ def get_all_possible_lookouts_from_json_path_with_wild_cards(json_path, lower_li
                     expansion_stack.append(list(range(lower_limit, upper_limit)))
                 else:
                     expansion_stack.append([int(current_range)])
-    possible_lookouts = list(product(*expansion_stack))
-    return possible_lookouts
+    possible_lookouts_index_tuples = list(product(*expansion_stack))
+    all_possible_lookouts = []
+    for lookout in possible_lookouts_index_tuples:
+        wild_path = json_path
+        for pos in lookout:
+            wild_path = wild_path.replace(re.compile('[.*]'), '[pos]')
+        all_possible_lookouts.append(wild_path)
+    return all_possible_lookouts
 
 
 def do_dict_interpolation(call: dict, run_config):

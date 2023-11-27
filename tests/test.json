@@ -70,6 +70,16 @@
         "nameCheck": "$.workingBlock=={{current_block}}",
         "friendCheck": "$.friend=={{currentFriend}}"
       }
+    },
+    {
+      "identifier": 4,
+      "description": "check_expanse",
+      "resource": "{{base_url}}/{{currentFriend}}",
+      "method": "POST",
+      "body": {},
+      "headers": {},
+      "saves": {},
+      "assertions": {}
     }
   ]
 }

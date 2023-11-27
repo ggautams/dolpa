@@ -1,6 +1,8 @@
+import os
 import unittest
 
-from src.dolpa.dolpa_utils import interpolate, get_dict_value_from_json_path
+from src.dolpa.dolpa_utils import interpolate, get_dict_value_from_json_path, do_string_interpolation, get_all_lookouts
+from src.dolpa.dolpa import run_bulk_api_tests
 
 
 class TestUtils(unittest.TestCase):
@@ -43,3 +45,8 @@ class TestUtils(unittest.TestCase):
     def test_get_dict_value_from_json_path(self):
         actual_value = get_dict_value_from_json_path(self.test_call, 'body.sampleArray[1].arr3[2]')
         self.assertEqual(actual_value, 9)
+
+    def test_do_string_interpolation(self):
+        actual_value = do_string_interpolation('{{value-1}}', self.test_config)
+        self.assertEqual(actual_value, 'test-value-1')
+
