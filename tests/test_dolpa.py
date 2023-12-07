@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 from src.dolpa.dolpa import run_bulk_api_tests, APITests
+from src.dolpa.exceptions import FailedAssertion
 
 
 class DolpaTest(unittest.TestCase):
@@ -21,7 +22,7 @@ class DolpaTest(unittest.TestCase):
         os.environ['dolpa_password'] = 'strong_password'
         os.environ['dolpa_extra_username'] = 'extra_user'
         os.environ['dolpa_extra_password'] = 'strongest_password'
-        mocked_responses_list = [
+        self.mocked_responses_list = [
             {
                 "auth_token": "xxxxxxxxxxxx",
                 "responseSent": 'yes'
@@ -44,7 +45,7 @@ class DolpaTest(unittest.TestCase):
             },
             {},
         ]
-        self.mocked_response_objects = [self.MockedResponse(in_dict) for in_dict in mocked_responses_list]
+        self.mocked_response_objects = [self.MockedResponse(in_dict) for in_dict in self.mocked_responses_list]
 
     @mock.patch('src.dolpa.dolpa.APITests.call_method_to_req_method_mapping')
     def test_run_bulk_api_tests(self, mocked_requests_mapping):
@@ -52,6 +53,17 @@ class DolpaTest(unittest.TestCase):
         mocked_post.side_effect = self.mocked_response_objects
         mocked_requests_mapping.__getitem__.side_effect = {'POST': mocked_post}.__getitem__
         run_bulk_api_tests(r'.')
+
+    @mock.patch('src.dolpa.dolpa.APITests.call_method_to_req_method_mapping')
+    def test_run_bulk_api_tests_global_abort_on_fail_is_false(self, mocked_requests_mapping):
+        """Making sure all tests run without any hiccups and raises assertions and continues"""
+        mocked_post = mock.Mock()
+        cloned_mocked_responses_list = self.mocked_responses_list[:]
+        cloned_mocked_responses_list[2] = {"workingBlock": "secret", "friend": "Wrong Friend"}
+        mocked_response_objects = [self.MockedResponse(in_dict) for in_dict in cloned_mocked_responses_list]
+        mocked_post.side_effect = mocked_response_objects
+        mocked_requests_mapping.__getitem__.side_effect = {'POST': mocked_post}.__getitem__
+        self.assertRaises(FailedAssertion, run_bulk_api_tests, r'.')
 
     @mock.patch('src.dolpa.dolpa.APITests.do_call_assertions')
     @mock.patch('src.dolpa.dolpa.APITests._call_execute')

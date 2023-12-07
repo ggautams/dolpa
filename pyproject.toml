@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dolpa"
-version = "0.1.4"
+version = "0.1.41"
 description = "Simple and elegant framework for automating your API tests"
 authors = ["ggautam <gpal.gtm@gmail.com>"]
 readme = "README.md"
@@ -11,6 +11,13 @@ documentation = "https://github.com/ggautams/dolpa/blob/main/README.md"
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = "^2.31.0"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+fastapi = "^0.103"
+uvicorn = "^0.22.0"
 
 
 [build-system]

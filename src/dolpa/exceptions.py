@@ -20,3 +20,7 @@ class AuthTypeNotSupportedError(Exception):
 
 class NoResponseDataError(Exception):
     pass
+
+
+class AttributeNotFoundError(Exception):
+    pass

@@ -7,7 +7,7 @@ from .dolpa_utils import interpolate, get_dict_value_from_json_path
 from .dolpa_logger import get_logger
 from .comparator import Comparator
 from .exceptions import (InValidCallAttributeError, InValidCallAttributeModifierError,
-                         AuthTypeNotSupportedError, NoResponseDataError)
+                         AuthTypeNotSupportedError, NoResponseDataError, FailedAssertion)
 
 LOGGER = get_logger()
 
@@ -28,6 +28,7 @@ class EndpointCall:
         self.saves = call.get('saves')
         self.assertions = call.get('assertions')
         self.auth = call.get('auth')
+        self.abort_if_assertion_fails = call.get('abortIfAssertionFails')
         self._response = None
         self._populate_headers_and_headers_strategy(call)
 
@@ -135,8 +136,19 @@ class APITests:
         if not call.response:
             raise NoResponseDataError(f'The call do not have response set. Probably it\'s not yet called.')
         response_json = call.response.json()
+        should_fail_if_assertion_fails = True
+        if call.abort_if_assertion_fails is None:
+            global_abort_state = self.run_config.get('abortIfAssertionFails')
+            if global_abort_state is not None:
+                should_fail_if_assertion_fails = global_abort_state
         for assertion_name, assertion in call.assertions.items():
-            Comparator(assertion_name, assertion, self.run_config, response_json).execute()
+            try:
+                Comparator(assertion_name, assertion, self.run_config, response_json).execute()
+            except FailedAssertion as e:
+                if should_fail_if_assertion_fails:
+                    raise e
+                else:
+                    LOGGER.warning(f"{assertion_name} which asserts {assertion} failed. Continuing...")
 
     def run_all(self, run_with_assertions=True):
         self._load_into_config_from_env()

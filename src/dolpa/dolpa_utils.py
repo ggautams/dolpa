@@ -1,28 +1,32 @@
 import re
 from itertools import product
 from .dolpa_logger import get_logger
+from .exceptions import AttributeNotFoundError
 
 
 LOGGER = get_logger()
 
 
 def get_dict_value_from_json_path(search_dict, json_path):
-    if '.' not in json_path:
-        stripped_key = json_path.strip()
-        if len(stripped_key) < len(json_path):
-            LOGGER.warning(f"Removing extra spaces when using the key {stripped_key}. Correct your Json file...")
-        return search_dict[stripped_key]
-    path_tokens = json_path.split('.')
-    current_value = search_dict
-    for token in path_tokens:
-        if '[' in token:
-            assert ']' in token
-            path_token, index = token.split('[')
-            index = index[:-1]
-            current_value = current_value[path_token][int(index)]
-        else:
-            current_value = current_value[token]
-    return current_value
+    try:
+        if '.' not in json_path:
+            stripped_key = json_path.strip()
+            if len(stripped_key) < len(json_path):
+                LOGGER.warning(f"Removing extra spaces when using the key {stripped_key}. Correct your Json file...")
+            return search_dict[stripped_key]
+        path_tokens = json_path.split('.')
+        current_value = search_dict
+        for token in path_tokens:
+            if '[' in token:
+                assert ']' in token
+                path_token, index = token.split('[')
+                index = index[:-1]
+                current_value = current_value[path_token][int(index)]
+            else:
+                current_value = current_value[token]
+        return current_value
+    except (IndexError, ValueError):
+        raise AttributeNotFoundError(f'The value {json_path} not found in {search_dict}')
 
 
 def get_all_lookouts(json_path, lower_limit=0, upper_limit=100):
